@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"
+          rel="stylesheet">
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>AI Helper</title>
+    <script src="../index_files/jquery.min.js"></script>
+    <style>
+        @import "https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap";
+    * {
+        font-family: Montserrat, sans-serif;
+    }
+      body {
+        font-family: Montserrat, sans-serif;
+        background-color: #fff;
+        color: #333;
+        margin:0px;
+        padding:0px;
+        overflow: hidden;
+      }
+      .container {
+        margin: 20px;
+      }
+      .input-group {
+        margin-bottom: 20px;
+        position: relative;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        margin-top: 5px;
+      }
+      input,
+      textarea {
+        width: 300px;
+        padding: 10px;
+        margin-bottom: 10px;
+      }
+      textarea {
+        height: 55px;
+        width: 350px;
+        box-sizing: border-box;
+      }
+      button {
+        padding: 10px 20px;
+        background-color: #1b3e95;
+        color: white;
+        border: none;
+        cursor: pointer;
+        text-transform: uppercase;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      .response {
+        margin-top: 20px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        background-color: #fafafa;
+
+        overflow-y: auto;
+        font-size: 14px;
+        height: 200px;
+      }
+      .typing-indicator {
+        font-style: italic;
+        color: grey;
+        position: absolute;
+        right: 20px;
+        font-size:12px;
+        text-align: right;
+        margin-top: 4px;
+      }
+      p {
+        margin: 5px 0;
+      }
+      .user {
+        color: #003b9f;
+
+      }
+      .ai {
+        color: #ff4500;
+
+      }
+      .clear {
+        position: absolute;
+        right: 20px;
+        top: 64px;
+        background: #ccc;
+        padding: 5px 10px;
+
+      }
+      .input-group button {
+        position: absolute;
+        right: 0px;
+        padding:0;
+        text-align: center;
+        line-height: 55px;
+        width: 100px;
+    font-weight: bold;
+
+      }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h3>AI Assistant</h3>
+
+    <div class="response" id="document-response"></div>
+    <div class="typing-indicator" id="upload-typing-indicator"></div>
+    <button type="button" class="clear" onclick="clearDocumentChat()">Șterge</button>
+    <div class="input-group">
+        <label for="document-question">Pune o intrebare:</label>
+        <textarea id="document-question" rows="2"></textarea>
+        <button onclick="askDocumentStreamQuestion()">Întreabă</button>
+
+    </div>
+
+</div>
+
+<script>
+    async function askDocumentStreamQuestion() {
+      const question = document.getElementById("document-question").value;
+      const user = "pepsi";
+
+      const responseDiv = document.getElementById("document-response");
+      const typingIndicator = document.getElementById(
+        "upload-typing-indicator"
+      );
+
+      typingIndicator.innerHTML =
+        '<p class="typing-indicator">Processing...</p>';
+      responseDiv.innerHTML += `<p class="user"><strong>User:</strong> ${question}</p>`;
+      document.getElementById("document-question").value = "";
+      responseDiv.scrollTop = responseDiv.scrollHeight;
+      try {
+        const response = await fetch(
+          `https://themain.ro/ai/document-chat-stream?user=${encodeURIComponent(
+            user
+          )}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ question: question }),
+          }
+        );
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        if (question.trim() === "") return;
+
+        var first = 0;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (first === 0) {
+            first = 1;
+            typingIndicator.innerHTML = "";
+            responseDiv.innerHTML += "<strong>Assistant:</strong> ";
+          }
+          let text = decoder.decode(value, { stream: true });
+                text = text.replace(/\n/g, '<br>').replace(/\t/g, '&nbsp;&nbsp;&nbsp;');
+                responseDiv.innerHTML += text;
+          responseDiv.scrollTop = responseDiv.scrollHeight;
+        }
+      } catch (error) {
+          typingIndicator.innerHTML = "";
+        responseDiv.innerHTML = `<p class="ai">Error: ${error.message}</p>`;
+        console.error("Fetch error:", error);
+      }
+    }
+
+    document
+      .getElementById("document-question")
+      .addEventListener("keypress", function (event) {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          askDocumentStreamQuestion();
+        }
+      });
+    function clearDocumentChat() {
+      document.getElementById("document-response").innerHTML = "";
+    }
+</script>
+</body>
+</html>

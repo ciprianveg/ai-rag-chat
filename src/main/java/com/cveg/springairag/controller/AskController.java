@@ -50,76 +50,6 @@ public class AskController {
     private static final Logger logger = LoggerFactory.getLogger(AskController.class);
 
 
-    @PostMapping("/document-chat-stream2")
-    public Flux<String> askStream2(@RequestBody Question question, @RequestParam String user) {
-        long t0 = System.currentTimeMillis();
-        if (user != null) user = user.trim().toLowerCase();
-        try {
-            VectorStore vectorStore = userVectorStoreService.getUserVectorStore(user);
-            List<Document> similarDocuments = vectorStore
-                    .similaritySearch(SearchRequest.query(question.question())
-                            .withTopK(3));
-            logger.info("vectorStore search time: {}ms", System.currentTimeMillis() - t0);
-
-            List<String> contentList = similarDocuments.stream()
-                    .map(Document::getContent)
-                    .toList();
-            // Create the prompt with the necessary parameters
-            String prompt = question.question();
-            logger.info("stream docs search time: {}ms", System.currentTimeMillis() - t0);
-
-            prompt = ragPromptTemplate.getContentAsString(StandardCharsets.UTF_8)
-                    .replace("{input}", question.question())
-                    .replace("{documents}", String.join("\n", contentList));
-
-
-            // Return the stream of responses from chatModel
-            return chatModel.stream(prompt);
-
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-        }
-        return new Flux<String>() {
-            @Override
-            public void subscribe(CoreSubscriber<? super String> coreSubscriber) {
-
-            }
-        };
-    }
-
-    @PostMapping("/document-chat-stream3")
-    public String askStream3(@RequestBody Question question, @RequestParam String user) {
-        long t0 = System.currentTimeMillis();
-        if (user != null) user = user.trim().toLowerCase();
-        try {
-            VectorStore vectorStore = userVectorStoreService.getUserVectorStore(user);
-            List<Document> similarDocuments = vectorStore
-                    .similaritySearch(SearchRequest.query(question.question())
-                            .withTopK(3));
-            String information = similarDocuments.stream()
-                    .map(Document::getContent)
-                    .collect(Collectors.joining(System.lineSeparator()));
-            logger.info("vectorStore search time: {}ms", System.currentTimeMillis() - t0);
-            var systemPromptTemplate = new SystemPromptTemplate("""
-                     You are a helpful assistant.  You answer using the Romanian language. Raspunde succint si la obiect.
-                     If you do not find the required information in the text below, answer: Nu am gasit informatia ceruta in documentatia mea.
-                                  
-                    Information:
-                     {information}
-                     """);
-            var systemMessage = systemPromptTemplate.createMessage(
-                    Map.of("information", information));
-
-            var userMessage = new UserMessage(question.question());
-            var prompt = new Prompt(List.of(systemMessage, userMessage));
-
-            return chatClient.prompt(prompt).call().content();
-
-        } catch (Exception e) {
-            logger.error(e.getMessage());
-        }
-        return " ";
-    }
 
     @PostMapping("/document-chat-stream")
     public Flux<String> askStream(@RequestBody Question question, @RequestParam String user) {
@@ -231,42 +161,6 @@ public class AskController {
         }
     }
 
-    @PostMapping("/user-page")
-    public String createUserPage(@RequestBody Question question, @RequestParam String user) {
-        long t0 = System.currentTimeMillis();
-        if (user != null) user = user.trim().toLowerCase();
-        try {
-            VectorStore vectorStore = userVectorStoreService.getUserVectorStore(user);
-            List<Document> similarDocuments = vectorStore
-                    .similaritySearch(SearchRequest.query(question.question())
-                            .withTopK(3));
-            String information = similarDocuments.stream()
-                    .map(Document::getContent)
-                    .collect(Collectors.joining(System.lineSeparator()));
-            logger.info("vectorStore search time: {}ms", System.currentTimeMillis() - t0);
-            var systemPromptTemplate = new SystemPromptTemplate("""
-                     You are a helpful assistant.  You answer using the Romanian language. Raspunde succint si la obiect.
-                     If you do not find the required information in the text below, answer: Nu am gasit informatia ceruta in documentatia mea.
-                                  
-                    Information:
-                     {information}
-                     """);
-            var systemMessage = systemPromptTemplate.createMessage(
-                    Map.of("information", information));
-
-            var userMessage = new UserMessage(question.question());
-            var prompt = new Prompt(List.of(systemMessage, userMessage));
-
-
-            //return chatClient.prompt(prompt).stream().content();
-            // return chatClient.prompt(prompt).call().content();
-            return chatClient.prompt(prompt).call().content();
-
-        } catch (Exception e) {
-            logger.error(e.getMessage());
-        }
-        return " ";
-    }
 
 }
 

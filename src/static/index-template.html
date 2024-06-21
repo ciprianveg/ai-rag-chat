@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Helper</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f0f8ff; color: #333; }
+        .container { margin: 20px; }
+        .input-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 5px; margin-top: 5px; }
+        input, textarea { width: 100%; padding: 10px; margin-bottom: 10px; }
+        button { padding: 10px 20px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        .response { margin-top: 20px; padding: 10px; border: 1px solid #ccc; background-color: #fafafa; max-height: 200px; overflow-y: auto; font-size: 14px; }
+        .typing-indicator { font-style: italic; color: grey; }
+        p { margin: 5px 0; }
+        .user { color: #003B9F; font-family: "Arial", sans-serif; }
+        .ai { color: #FF4500; font-family: "Courier New", Courier, monospace; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h3>AI Assistant</h3>
+
+    <div class="response" id="document-response"></div>
+    <div class="typing-indicator" id="upload-typing-indicator"></div>
+    <div class="input-group">
+        <label for="document-question">Pune o intrebare:</label>
+        <textarea id="document-question" rows="2"></textarea>
+        <button onclick="askDocumentStreamQuestion()">Intreaba</button>
+        <button type="button" onclick="clearDocumentChat()">Sterge</button>
+    </div>
+
+    <hr>
+</div>
+
+<script>
+    async function askDocumentStreamQuestion() {
+        const question = document.getElementById('document-question').value;
+        const user = 'template';
+
+        const responseDiv = document.getElementById('document-response');
+        const typingIndicator = document.getElementById('upload-typing-indicator');
+
+        if (question.trim() === "") return;
+
+        typingIndicator.innerHTML = '<p class="typing-indicator">Processing...</p>';
+        responseDiv.innerHTML += `<p class="user">User: ${question}</p>`;
+        document.getElementById('document-question').value = "";
+
+        try {
+            const response = await fetch(`https://themain.ro/ai/document-chat-stream?user=${encodeURIComponent(user)}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ question: question })
+            });
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+
+
+            var first = 0;
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                if (first === 0){
+                    first = 1;
+                    typingIndicator.innerHTML = '';
+                    responseDiv.innerHTML += 'Assistant: ';
+                }
+                const text = decoder.decode(value, { stream: true });
+                const textFormatted = text.replace(/\n/g, '<br>');
+                responseDiv.innerHTML += textFormatted;
+                responseDiv.scrollTop = responseDiv.scrollHeight;
+
+            }
+
+        } catch (error) {
+            responseDiv.innerHTML = `<p class="ai">Error: ${error.message}</p>`;
+            console.error('Fetch error:', error);
+        }
+    }
+
+    document.getElementById('document-question').addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            askDocumentStreamQuestion();
+        }
+    });
+
+    function clearDocumentChat() {
+        document.getElementById('document-response').innerHTML = "";
+    }
+</script>
+</body>
+</html>

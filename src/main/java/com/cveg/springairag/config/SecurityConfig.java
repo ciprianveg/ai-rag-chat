@@ -52,9 +52,8 @@ public class SecurityConfig {
                                 .disable() // Disables X-Frame-Options header entirely
                         )
                 )
-                //    .requestMatchers("/vectorstore/**", "/index.html").authenticated()  // Authenticate these paths
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/index.html").authenticated()  // Authenticate these paths
+                        .requestMatchers("/vectorstore/**", "/index.html").authenticated()  // Authenticate these paths
                         .anyRequest().permitAll()                                       // Allow all other requests
                 )
                 .formLogin(withDefaults())                                          // Enable form-based login with default settings
