@@ -272,7 +272,7 @@
         typingIndicator.innerHTML = '<p class="typing-indicator">Processing...</p>';
 
         try {
-            const response = await fetch(`https://themain.ro/ai/document-chat-stream?user=${encodeURIComponent(user)}`, {
+            const response = await fetch(`/ai/document-chat-stream?user=${encodeURIComponent(user)}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -300,13 +300,6 @@
                 responseDiv.innerHTML += text;
             }
 
-            if (response.ok) {
-                const data = await response.json();
-                const aiResponse = `<p class="ai">${data.answer}</p>`;
-                responseDiv.innerHTML += aiResponse;
-            } else {
-                responseDiv.innerHTML += '<p class="user">Failed to get a response from the server</p>';
-            }
         } catch (error) {
             responseDiv.innerHTML += `<p class="user">Error: ${error.message}</p>`;
             console.error('Fetch error:', error);
@@ -332,7 +325,7 @@
         typingIndicator.innerHTML = '<p class="typing-indicator">Processing...</p>';
 
         try {
-            const response = await fetch(`https://themain.ro/ai/upload?user=${encodeURIComponent(user)}`, {
+            const response = await fetch(`/ai/upload?user=${encodeURIComponent(user)}`, {
                 method: 'POST',
                 body: formData
             });
@@ -359,7 +352,7 @@
         typingIndicator.innerHTML = '<p class="typing-indicator">Processing...</p>';
 
         try {
-            const response = await fetch(`https://themain.ro/ai/upload-url?url=${encodeURIComponent(urlInput)}&user=${encodeURIComponent(userName)}`, {
+            const response = await fetch(`/ai/upload-url?url=${encodeURIComponent(urlInput)}&user=${encodeURIComponent(userName)}`, {
                 method: 'POST'
             });
 
@@ -397,7 +390,7 @@
         }
 
         try {
-            const response = await fetch(`https://themain.ro/user/page?user=${encodeURIComponent(username)}`, {
+            const response = await fetch(`/user/page?user=${encodeURIComponent(username)}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
